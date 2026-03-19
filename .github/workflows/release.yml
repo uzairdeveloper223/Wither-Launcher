@@ -9,18 +9,71 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: ubuntu-22.04
-            target: linux
-          - platform: windows-latest
-            target: windows
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    runs-on: ${{ matrix.platform }}
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            librsvg2-dev \
+            patchelf
 
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Build Tauri app (Linux)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Wither Launcher ${{ github.ref_name }}'
+          releaseBody: |
+            ## Wither Launcher ${{ github.ref_name }}
+
+            ### Downloads
+            - **Linux**: `.deb` (Debian/Ubuntu) or `.AppImage` (universal)
+            - **Windows**: `.exe` (NSIS installer)
+
+            ### Installation
+            **Linux AppImage**: `chmod +x Wither_*.AppImage && ./Wither_*.AppImage`
+            **Linux .deb**: `sudo dpkg -i wither_*.deb`
+            **Windows**: Run the `.exe` installer
+          releaseDraft: false
+          prerelease: false
+
+  build-windows:
+    runs-on: windows-latest
+    needs: build-linux
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,43 +92,20 @@ jobs:
           node-version: 20
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9
 
       - name: Install frontend dependencies
         run: pnpm install
 
-      # Linux-specific dependencies
-      - name: Install Linux dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev
-
-      - name: Build Tauri app
+      - name: Build Tauri app (Windows)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Wither Launcher ${{ github.ref_name }}'
-          releaseBody: |
-            ## Wither Launcher ${{ github.ref_name }}
-            
-            ### Downloads
-            - **Linux**: `.deb` (Debian/Ubuntu) or `.AppImage` (universal)
-            - **Windows**: `.exe` (NSIS installer)
-            
-            ### Installation
-            **Linux AppImage**: `chmod +x Wither_*.AppImage && ./Wither_*.AppImage`
-            **Linux .deb**: `sudo dpkg -i wither_*.deb`
-            **Windows**: Run the `.exe` installer
+          releaseBody: ''
           releaseDraft: false
           prerelease: false
