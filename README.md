@@ -155,10 +155,8 @@ To download GE-Proton versions directly:
 ## Known Issues
 
 - Filter dropdown in search bar is not fully functional yet
-- While Steam library is syncing, the app may briefly become unresponsive
 - Playtime is only tracked when games are launched from Wither
 - Steam may not close automatically when a Steam game exits on some systems
-- Custom game cover art relies on name matching — some games may show placeholder covers
 - Fonts may show 404 errors in dev mode (cosmetic, doesn't affect production build)
 
 ## Roadmap
