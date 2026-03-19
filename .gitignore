@@ -9,7 +9,6 @@ build/
 dist/
 .svelte-kit/
 src-tauri/target/
-src-tauri/icons/
 
 # IDE
 .idea/
